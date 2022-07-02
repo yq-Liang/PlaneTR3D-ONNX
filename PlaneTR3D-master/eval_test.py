@@ -67,8 +67,8 @@ def eval():
     planeNorm_recall_curve = np.zeros((13, 3))
     plane_Seg_Metric = np.zeros((3))
 
-    data_path = './res/test.png'
-    # data_path = './res/test32.png'
+    # data_path = './res/test.png'
+    data_path = './res/test32.png'
 
     image = cv2.imread(data_path)
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)  # 192 256 3
@@ -79,23 +79,28 @@ def eval():
     # print(input.shape)
     input = input.permute(1, 3, 0, 2)
     # print(input.shape)
-    image= input
+    image= input.to(device)
 
-    ##下面这个读取方法不行
-    # image = Image.fromarray(image)
-    # image = transforms(image)
-    # image = image.unsqueeze(0)
-    # input = image.numpy()
 
     bs, _, h, w = image.shape
     # assert bs == 1, "batch size should be 1 when testing!"
     # assert h == 192 and w == 256
-    x_t=torch.linspace(1,h//16,h//16).unsqueeze(1)
-    y_t=torch.linspace(1,w//16,w//16).unsqueeze(0)
+    x_t=torch.linspace(1,h//16,h//16).unsqueeze(1).to(device)
+    y_t=torch.linspace(1,w//16,w//16).unsqueeze(0).to(device)
     # forward pass
     outputs = network(image,x_t,y_t)
     # outputs = network(image)
     # cv2.imwrite('test.png', outputs)
+
+    path = r'res/eval_test_file.txt'
+    file = open(path, 'w+')
+    for i in outputs.keys():
+        # print(outputs[i].shape)
+        file.write(str(i))
+        file.write(":\n")
+        file.write(str(outputs[i]))
+        file.write("\n")
+    file.close()
 
     # decompose outputs
     pred_logits = outputs['pred_logits'][0]  # num_queries, 3
@@ -112,15 +117,7 @@ def eval():
     # # print(5, pred_pixel_depth.shape)
     # #log file
     # print(outputs.shape)
-    path=r'res/eval_test_file.txt'
-    file=open(path,'w+')
-    for i in outputs.keys():
-        # print(outputs[i].shape)
-        file.write(str(i))
-        file.write(":\n")
-        file.write(str(outputs[i]))
-        file.write("\n")
-    file.close()
+
 
 
     # remove non-plane instance

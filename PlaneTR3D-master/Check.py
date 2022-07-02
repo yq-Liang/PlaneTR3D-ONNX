@@ -53,10 +53,23 @@ input2=input_2.numpy()
 # input=torch.Tensor(image)
 # print(type(input))
 ort_session=onnxruntime.InferenceSession('PlaneTR_test.onnx')
-# ort_inputs={'input_0':input}
-ort_inputs={'input_0':input,'input_1':input1,'input_2':input2}
+ort_inputs={'input_0':input}
+# ort_inputs={'input_0':input,'input_1':input1,'input_2':input2}
 outputs=ort_session.run(None,ort_inputs)
 
+path=r'res/check_file.txt'
+# path2=r'output.png'
+# image=Image.fromarray(np.array(outputs)[0])
+# cv2.imwrite(path2, image)
+
+file=open(path,'w+')
+for i in range(len(outputs)):
+    print(outputs[i].shape)
+    file.write(str(i))
+    file.write(":\n")
+    file.write(str(outputs[i]))
+    file.write("\n")
+file.close()
 
 # #TODO 打印结果
 # res=Res(output1,output2,output3,image)
@@ -86,20 +99,6 @@ pred_pixel_embedding = torch.from_numpy(outputs[3][0])  # 2, h, w
 # print(4,pred_pixel_embedding.shape)
 pred_pixel_depth = torch.from_numpy(outputs[6][0])  # h, w
 # print(5,pred_pixel_depth.shape)
-
-path=r'res/check_file.txt'
-# path2=r'output.png'
-# image=Image.fromarray(np.array(outputs)[0])
-# cv2.imwrite(path2, image)
-
-file=open(path,'w+')
-for i in range(len(outputs)):
-    print(outputs[i].shape)
-    file.write(str(i))
-    file.write(":\n")
-    file.write(str(outputs[i]))
-    file.write("\n")
-file.close()
 
 # remove non-plane instance
 pred_prob = F.softmax(pred_logits, dim=-1)  # num_queries, 3

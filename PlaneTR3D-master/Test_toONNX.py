@@ -382,36 +382,37 @@ class My_HighResolutionNet(nn.Module):
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
-        x = self.conv2(x)
-        x = self.bn2(x)
-        x = self.relu(x)
-        x = self.layer1(x)
-
-        x_list = []
-        for i in range(2):
-            # if self.transition1[i] is not None:
-            x_list.append(self.transition1[i](x))
-            # else:
-            #     x_list.append(x)
-        y_list = self.stage2(x_list)
-
-        x_list = []
-        for i in range(3):
-            if self.transition2[i] is not None:
-                x_list.append(self.transition2[i](y_list[-1]))
-            else:
-                x_list.append(y_list[i])
-        y_list = self.stage3(x_list)
-
-        x_list = []
-        for i in range(4):
-            if self.transition3[i] is not None:
-                x_list.append(self.transition3[i](y_list[-1]))
-            else:
-                x_list.append(y_list[i])
-        y_list = self.stage4(x_list)
-
-        return y_list
+        # x = self.conv2(x)
+        # x = self.bn2(x)
+        # x = self.relu(x)
+        # x = self.layer1(x)
+        #
+        # x_list = []
+        # for i in range(2):
+        #     # if self.transition1[i] is not None:
+        #     x_list.append(self.transition1[i](x))
+        #     # else:
+        #     #     x_list.append(x)
+        # y_list = self.stage2(x_list)
+        #
+        # x_list = []
+        # for i in range(3):
+        #     if self.transition2[i] is not None:
+        #         x_list.append(self.transition2[i](y_list[-1]))
+        #     else:
+        #         x_list.append(y_list[i])
+        # y_list = self.stage3(x_list)
+        #
+        # x_list = []
+        # for i in range(4):
+        #     if self.transition3[i] is not None:
+        #         x_list.append(self.transition3[i](y_list[-1]))
+        #     else:
+        #         x_list.append(y_list[i])
+        # y_list = self.stage4(x_list)
+        #
+        # return y_list
+        return x
 
     def init_weights(self, pretrained='', ):
         # logger.info('=> init weights from normal distribution')
@@ -648,55 +649,58 @@ class PlaneModel(torch.nn.Module):
         x=transforms(x[0]).unsqueeze(0)
 
         bs, _, ho, wo = x.shape
-        c1, c2, c3, c4 = self.backbone(x)  # c: 32, 64, 128, 256
-
-        # context src feature
-        src = c4
-
-        # context feature proj
-        src = self.input_proj(src)  # b, hidden_dim, h, w ok
-        # position embedding
-        pos = self.position_embedding(src,x_t,y_t)#1 256 2 2  1 2 2 256
-
-        hs_all, _, memory = self.transformer(src, self.query_embed.weight, pos, tgt=None,
-                                             src_lines=None, mask_lines=None,
-                                             pos_embed_lines=None)  # memory: b, c, h, w
-        # return x,src,pos
-        hs = hs_all[-self.loss_layer_num:, :, :, :].contiguous()  # dec_layers, b, num_queries, hidden_dim
-        # plane embedding
-        plane_embedding = self.plane_embedding(hs)  # dec_layers, b, num_queries, 2
-
-        # plane classifier
-        plane_prob = self.plane_prob(hs)  # dec_layers, b, num_queries, 3
-        # plane parameters
-        plane_param = self.plane_param(hs)  # dec_layers, b, num_queries, 3
-        # plane center
-        plane_center = self.plane_center(hs)  # dec_layers, b, num_queries, 2
-        plane_center = torch.sigmoid(plane_center)
-        p0, p1, p2, p3, p4 = self.top_down((c1, c2, c3, c4), memory)
-
-        pixel_embedding = self.pixel_embedding(p0)  # b, 2, h, w 8
-        pixel_center = self.pixel_plane_center(p0)  # b, 2, h, w 2
-
-        pixel_center = torch.sigmoid(pixel_center)  # 0~1
-        p_depth, _, _, _, _ = self.top_down_depth((c1, c2, c3, c4), memory)
-        pixel_depth = self.depth(p_depth)
-
-        #TODO:最后结尾
-        # return plane_prob,plane_embedding,pixel_embedding
-
-        output = {'pred_logits': plane_prob[-1], 'pred_param': plane_param[-1],
-                  'pred_plane_embedding': plane_embedding[-1], 'pixel_embedding': pixel_embedding}
-        output['pixel_center'] = pixel_center
-        output['pred_center'] = plane_center[-1]
-        output['pixel_depth'] = pixel_depth
-        output['x']=x
-        output['c4']=c4
-        output['src']=src
-
-        # output={'x':x,'c4':c4,'src':src}
-
+        x=self.backbone(x)
+        output={x:'x'}
         return output
+        # c1, c2, c3, c4 = self.backbone(x)  # c: 32, 64, 128, 256
+        #
+        # # context src feature
+        # src = c4
+        #
+        # # context feature proj
+        # src = self.input_proj(src)  # b, hidden_dim, h, w ok
+        # # position embedding
+        # pos = self.position_embedding(src,x_t,y_t)#1 256 2 2  1 2 2 256
+        #
+        # hs_all, _, memory = self.transformer(src, self.query_embed.weight, pos, tgt=None,
+        #                                      src_lines=None, mask_lines=None,
+        #                                      pos_embed_lines=None)  # memory: b, c, h, w
+        # # return x,src,pos
+        # hs = hs_all[-self.loss_layer_num:, :, :, :].contiguous()  # dec_layers, b, num_queries, hidden_dim
+        # # plane embedding
+        # plane_embedding = self.plane_embedding(hs)  # dec_layers, b, num_queries, 2
+        #
+        # # plane classifier
+        # plane_prob = self.plane_prob(hs)  # dec_layers, b, num_queries, 3
+        # # plane parameters
+        # plane_param = self.plane_param(hs)  # dec_layers, b, num_queries, 3
+        # # plane center
+        # plane_center = self.plane_center(hs)  # dec_layers, b, num_queries, 2
+        # plane_center = torch.sigmoid(plane_center)
+        # p0, p1, p2, p3, p4 = self.top_down((c1, c2, c3, c4), memory)
+        #
+        # pixel_embedding = self.pixel_embedding(p0)  # b, 2, h, w 8
+        # pixel_center = self.pixel_plane_center(p0)  # b, 2, h, w 2
+        #
+        # pixel_center = torch.sigmoid(pixel_center)  # 0~1
+        # p_depth, _, _, _, _ = self.top_down_depth((c1, c2, c3, c4), memory)
+        # pixel_depth = self.depth(p_depth)
+        #
+        # #TODO:最后结尾
+        # # return plane_prob,plane_embedding,pixel_embedding
+        #
+        # output = {'pred_logits': plane_prob[-1], 'pred_param': plane_param[-1],
+        #           'pred_plane_embedding': plane_embedding[-1], 'pixel_embedding': pixel_embedding}
+        # output['pixel_center'] = pixel_center
+        # output['pred_center'] = plane_center[-1]
+        # output['pixel_depth'] = pixel_depth
+        # output['x']=x
+        # output['c4']=c4
+        # output['src']=src
+        #
+        # # output={'x':x,'c4':c4,'src':src}
+        #
+        # return output
         # output=[]
         # output.append(plane_prob[-1])
         # output.append(plane_param[-1])
@@ -798,7 +802,7 @@ input_names = ['input_0','input_1','input_2']
 # output_names=['output_0','output_1','output_2']
 output_names=['output']
 
-weight=torch.load(checkpoint,map_location=torch.device('cpu'))
+weight=torch.load(checkpoint,map_location=device)
 weight2={}
 # for k in weight.keys():
 #     if k=="backbone.bn1.running_mean" or k=="backbone.bn1.running_var" or k =="backbone.bn1.num_batches_tracked":
@@ -812,7 +816,7 @@ model.to(device)
 model.load_state_dict(weight)# 初始化权重
 
 
-input=(input_0,input_1,input_2)
+input=(input_0.to(device),input_1.to(device),input_2.to(device))
 torch.onnx.export(model, input, onnx_path, verbose=True, input_names=input_names,
                   output_names=output_names,dynamic_axes={'input_0' : {0 :"batch",2:"height",3:"weight"} ,
                                                           'input_1' : {0 :"height"},
