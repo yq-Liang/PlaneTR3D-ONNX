@@ -6,6 +6,7 @@ import math
 import torch
 from torch import nn
 
+device=torch.device('cuda' if torch.cuda.is_available() else 'cpu' )
 class PositionEmbeddingSine(nn.Module):
     """
     This is a more standard version of the position embedding, very similar to the one
@@ -29,8 +30,8 @@ class PositionEmbeddingSine(nn.Module):
         # y_embed = not_mask.cumsum(1, dtype=torch.float32)
         # x_embed = not_mask.cumsum(2, dtype=torch.float32)
         #修改
-        x_embed=torch.ones(size=(1,b,h,w))*x_t
-        y_embed=torch.ones(size=(1,b,h,w))*y_t
+        x_embed=torch.ones(size=(1,b,h,w)).to(device)*x_t
+        y_embed=torch.ones(size=(1,b,h,w)).to(device)*y_t
 
         dim_t = torch.arange(self.num_pos_feats, dtype=torch.float32, device=x.device)
         #修改

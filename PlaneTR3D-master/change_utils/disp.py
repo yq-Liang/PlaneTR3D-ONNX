@@ -207,10 +207,12 @@ def visualizationBatch(root_path, idx, info, data_dict, non_plane_idx,
         # ***************  get color segmentation
         seg = np.stack([colors[segmentation, 0], colors[segmentation, 1], colors[segmentation, 2]], axis=2)
         # ***************  get blend image
+
         blend_seg = (seg * 0.7 + image * 0.3).astype(np.uint8)
         seg_mask = (segmentation > 0).astype(np.uint8)
         seg_mask = seg_mask[:, :, np.newaxis]
         blend_seg = blend_seg * seg_mask + image.astype(np.uint8) * (1 - seg_mask)
+
         # ***************  save
         # seg_path = os.path.join(root_path, '%d_seg_%s.png' % (idx, info))
         # cv2.imwrite(seg_path, seg)

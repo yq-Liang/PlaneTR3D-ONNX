@@ -87,7 +87,7 @@ class Transformer(nn.Module):
         memory = self.encoder(src, pos=pos_embed)# unity 256,1,1,256  torch 4 1 256
         # query_embed = query_embed.unsqueeze(1).repeat(1, bs, 1)#torch 20 20 1 256
         #修改
-        ones=torch.ones(query_embed.shape[0],bs,query_embed.shape[1])
+        ones=torch.ones(query_embed.shape[0],bs,query_embed.shape[1],device=src.device)
         query_embed=query_embed.unsqueeze(1)*ones# 20 1 256
         tgt = torch.zeros_like(query_embed)#torch  20 1 256
         hs = self.decoder(tgt, memory, pos=pos_embed, query_pos=query_embed)

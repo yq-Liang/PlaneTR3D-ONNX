@@ -10,6 +10,9 @@ except Exception:
 else:
     print("Model correct")
 
+# set device
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 
 import onnxruntime
 import numpy as np
@@ -26,20 +29,20 @@ data_path='./res/test32.png'
 # data_path='face.png'
 image=cv2.imread(data_path)
 image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)# 192 256 3
-#大的可以
+
+# #大的可以
 image=Image.fromarray(image)
 image=transforms(image)#3 h w
 image=image.unsqueeze(0)
 input=image.numpy()
 
-# #原文方法
+#原文方法
 # input = image.astype(np.float32)
 # input = torch.tensor(input)
 # input = input.unsqueeze(1)
 # # print(input.shape)
 # input = input.permute(1, 3, 0, 2)
-# # print(input.shape)
-# image = input
+# image = input.to(device)
 # input=input.numpy()
 
 b,_,h,w=image.shape
@@ -57,7 +60,7 @@ ort_inputs={'input_0':input}
 # ort_inputs={'input_0':input,'input_1':input1,'input_2':input2}
 outputs=ort_session.run(None,ort_inputs)
 
-path=r'res/check_file.txt'
+path=r'res/check_file_ori.txt'
 # path2=r'output.png'
 # image=Image.fromarray(np.array(outputs)[0])
 # cv2.imwrite(path2, image)
@@ -81,8 +84,6 @@ import torch.nn.functional as F
 from change_utils.misc import get_coordinate_map
 import torch
 
-# set device
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 num_queries=20
 embedding_dist_threshold=1.0
@@ -133,11 +134,11 @@ if int(mask_pixelOnPlane.sum()) < (h * w):  # set plane idx of non-plane pixels 
 predict_segmentation = predict_segmentation.reshape(h, w)  # h, w (0~num_queries-1:plane idx, num_queries+1:non-plane)
 
 # get depth map
-depth_maps_inv = torch.matmul(valid_param, k_inv_dot_xy1)
+depth_maps_inv = torch.matmul(valid_param.to(device), k_inv_dot_xy1)
 depth_maps_inv = torch.clamp(depth_maps_inv, min=0.1, max=1e4)
 depth_maps = 1. / depth_maps_inv  # (valid_plane_num, h*w)  6 49152
 inferred_depth = depth_maps.t()[range(h * w), planeIdx_pixel2onePlane.view(-1)].view(h, w)
-inferred_depth = inferred_depth * mask_pixelOnPlane.float() + pred_pixel_depth * (1-mask_pixelOnPlane.float())
+inferred_depth = inferred_depth.to(device) * mask_pixelOnPlane.float().to(device) + pred_pixel_depth.to(device) * (1-mask_pixelOnPlane.float().to(device))
 
 # get depth maps
 # gt_depth = gt_depth.cpu().numpy()[0, 0].reshape(h, w)  # h, w
@@ -162,7 +163,7 @@ predict_segmentation[predict_segmentation == (num_queries + 1)] = -1
 predict_segmentation = torch.from_numpy(predict_segmentation)
 inferred_depth = torch.from_numpy(inferred_depth)
 
-image=image[0].detach().permute(1,2,0).numpy()
+image=image[0].detach().permute(1,2,0).cpu().numpy()
 
 debug_dict = {'image': image,
               'segmentation': predict_segmentation,

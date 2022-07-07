@@ -50,17 +50,10 @@ def eval():
 
     # build network
     network = PlaneModel()
-    network.eval()
+    # network.eval()
     # load nets into gpu or cpu
     network = network.to(device)
-    weight=torch.load('./ckpts/PlaneTR_Pretrained.pt', map_location=device)
-    weight2 = {}
-    for k in weight.keys():
-        if k == "backbone.bn1.running_mean" or k == "backbone.bn1.running_var" or k == "backbone.bn1.num_batches_tracked":
-            pass
-        else:
-            weight2[k] = weight[k]
-    network.load_state_dict(weight2)
+    network.load_state_dict(torch.load('./ckpts/PlaneTR_Pretrained.pt', map_location=torch.device('cpu')))
 
 
     k_inv_dot_xy1 = get_coordinate_map(device)
@@ -80,20 +73,14 @@ def eval():
     image = cv2.imread(data_path)
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)  # 192 256 3
 
-    #老方法
-    # input = image.astype(np.float32)
-    # input = torch.tensor(input)# h w 3
-    # input = input.unsqueeze(1)
-    # # print(input.shape)
-    # input = input.permute(1, 3, 0, 2)
-    # # print(input.shape)
-    # image= input.to(device)
+    input = image.astype(np.float32)
+    input = torch.tensor(input)# h w 3
+    input = input.unsqueeze(1)
+    # print(input.shape)
+    input = input.permute(1, 3, 0, 2)
+    # print(input.shape)
+    image= input.to(device)
 
-    #新方法
-    image = Image.fromarray(image)
-    image = transforms(image)  # 3 h w
-    image = image.unsqueeze(0).to(device)
-    input = image.cpu().numpy()
 
     bs, _, h, w = image.shape
     # assert bs == 1, "batch size should be 1 when testing!"
