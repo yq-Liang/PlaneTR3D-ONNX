@@ -247,13 +247,12 @@ class My_HighResolutionNet(nn.Module):
         #stem net
         self.conv1 = nn.Conv2d(3, 64, kernel_size=3, stride=2, padding=1,
                                bias=False)
-        # self.bn1 = nn.BatchNorm2d(64, momentum=0.01,track_running_stats=False)
-        self.bn1 = nn.BatchNorm2d(64, momentum=0.01)
+        self.bn1 = nn.BatchNorm2d(64, momentum=0.01,track_running_stats=False)
         self.conv2 = nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1,
                                bias=False)
         self.bn2 = nn.BatchNorm2d(64, momentum=0.01)
-        # self.relu = nn.ReLU(inplace=True)
-        self.relu = nn.ReLU()
+        self.relu = nn.ReLU(inplace=True)
+        # self.relu = nn.ReLU()
 
 
         num_channels_1 = 64
@@ -381,7 +380,7 @@ class My_HighResolutionNet(nn.Module):
     def forward(self, x):
         x = self.conv1(x)
         x = self.bn1(x)
-        x = self.relu(x)
+        # x = self.relu(x)
         # x = self.conv2(x)
         # x = self.bn2(x)
         # x = self.relu(x)
@@ -650,15 +649,18 @@ class PlaneModel(torch.nn.Module):
 
         bs, _, ho, wo = x.shape
         x=self.backbone(x)
-        output={x:'x'}
+
+        output={'bnx':x}
         return output
+
+
         # c1, c2, c3, c4 = self.backbone(x)  # c: 32, 64, 128, 256
         #
         # # context src feature
         # src = c4
         #
         # # context feature proj
-        # src = self.input_proj(src)  # b, hidden_dim, h, w ok
+        # src = self.input_proj(src).to(device)  # b, hidden_dim, h, w ok
         # # position embedding
         # pos = self.position_embedding(src,x_t,y_t)#1 256 2 2  1 2 2 256
         #
@@ -686,8 +688,6 @@ class PlaneModel(torch.nn.Module):
         # p_depth, _, _, _, _ = self.top_down_depth((c1, c2, c3, c4), memory)
         # pixel_depth = self.depth(p_depth)
         #
-        # #TODO:最后结尾
-        # # return plane_prob,plane_embedding,pixel_embedding
         #
         # output = {'pred_logits': plane_prob[-1], 'pred_param': plane_param[-1],
         #           'pred_plane_embedding': plane_embedding[-1], 'pixel_embedding': pixel_embedding}
@@ -695,12 +695,9 @@ class PlaneModel(torch.nn.Module):
         # output['pred_center'] = plane_center[-1]
         # output['pixel_depth'] = pixel_depth
         # output['x']=x
-        # output['c4']=c4
         # output['src']=src
-        #
-        # # output={'x':x,'c4':c4,'src':src}
-        #
         # return output
+
         # output=[]
         # output.append(plane_prob[-1])
         # output.append(plane_param[-1])
@@ -800,20 +797,20 @@ input_2=torch.linspace(1,2,2).unsqueeze(0)
 input_names = ['input_0','input_1','input_2']
 # output_names=['output_0','output_1']
 # output_names=['output_0','output_1','output_2']
-output_names=['output']
+output_names=['output_0']
 
 weight=torch.load(checkpoint,map_location=device)
 weight2={}
-# for k in weight.keys():
-#     if k=="backbone.bn1.running_mean" or k=="backbone.bn1.running_var" or k =="backbone.bn1.num_batches_tracked":
-#         pass
-#     else:
-#         weight2[k]=weight[k]
+for k in weight.keys():
+    if k=="backbone.bn1.running_mean" or k=="backbone.bn1.running_var" or k =="backbone.bn1.num_batches_tracked":
+        pass
+    else:
+        weight2[k]=weight[k]
 
 model = PlaneModel()  # 导入模型
 model.eval()
 model.to(device)
-model.load_state_dict(weight)# 初始化权重
+model.load_state_dict(weight2)# 初始化权重
 
 
 input=(input_0.to(device),input_1.to(device),input_2.to(device))

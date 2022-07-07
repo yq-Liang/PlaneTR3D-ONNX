@@ -50,10 +50,17 @@ def eval():
 
     # build network
     network = PlaneModel()
-    # network.eval()
+    network.eval()
     # load nets into gpu or cpu
     network = network.to(device)
-    network.load_state_dict(torch.load('./ckpts/PlaneTR_Pretrained.pt', map_location=torch.device('cpu')))
+    weight=torch.load('./ckpts/PlaneTR_Pretrained.pt', map_location=device)
+    weight2 = {}
+    for k in weight.keys():
+        if k == "backbone.bn1.running_mean" or k == "backbone.bn1.running_var" or k == "backbone.bn1.num_batches_tracked":
+            pass
+        else:
+            weight2[k] = weight[k]
+    network.load_state_dict(weight2)
 
 
     k_inv_dot_xy1 = get_coordinate_map(device)
@@ -67,20 +74,26 @@ def eval():
     planeNorm_recall_curve = np.zeros((13, 3))
     plane_Seg_Metric = np.zeros((3))
 
-    # data_path = './res/test.png'
-    data_path = './res/test32.png'
+    data_path = './res/test.png'
+    # data_path = './res/test32.png'
 
     image = cv2.imread(data_path)
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)  # 192 256 3
 
-    input = image.astype(np.float32)
-    input = torch.tensor(input)# h w 3
-    input = input.unsqueeze(1)
-    # print(input.shape)
-    input = input.permute(1, 3, 0, 2)
-    # print(input.shape)
-    image= input.to(device)
+    #老方法
+    # input = image.astype(np.float32)
+    # input = torch.tensor(input)# h w 3
+    # input = input.unsqueeze(1)
+    # # print(input.shape)
+    # input = input.permute(1, 3, 0, 2)
+    # # print(input.shape)
+    # image= input.to(device)
 
+    #新方法
+    image = Image.fromarray(image)
+    image = transforms(image)  # 3 h w
+    image = image.unsqueeze(0).to(device)
+    input = image.cpu().numpy()
 
     bs, _, h, w = image.shape
     # assert bs == 1, "batch size should be 1 when testing!"
@@ -98,7 +111,7 @@ def eval():
         # print(outputs[i].shape)
         file.write(str(i))
         file.write(":\n")
-        file.write(str(outputs[i]))
+        file.write(str(list(outputs[i])))
         file.write("\n")
     file.close()
 
@@ -108,7 +121,7 @@ def eval():
     pred_plane_embedding = outputs['pred_plane_embedding'][0]  # num_queries, 2
     pred_pixel_embedding = outputs['pixel_embedding'][0]  # 2, h, w
 
-    pred_pixel_depth = outputs['pixel_depth'][0, 0]  # h, w
+    pred_pixel_depth = outputs['pixel_depth'][0]  # h, w
 
     # #
     # # print(2, pred_param.shape)
@@ -161,7 +174,7 @@ def eval():
 
     # get depth maps
     # gt_depth = gt_depth.cpu().numpy()[0, 0].reshape(h, w)  # h, w
-    inferred_depth = inferred_depth.detach().numpy().reshape(h, w)
+    inferred_depth = inferred_depth.detach().cpu().numpy().reshape(h, w)
     inferred_depth = np.clip(inferred_depth, a_min=1e-4, a_max=10.)
     #
     # # # ----------------------------------------------------- evaluation
@@ -207,7 +220,7 @@ def eval():
 
 
 
-    image = image[0].detach().permute(1,2,0).numpy()
+    image = image[0].detach().permute(1,2,0).cpu().numpy()
 
     debug_dict = {'image': image,
                   'segmentation': predict_segmentation,
