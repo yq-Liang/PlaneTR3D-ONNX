@@ -26,24 +26,25 @@ transforms = tf.Compose([
 
 # data_path='./res/test.png'
 data_path='./res/test32.png'
-# data_path='face.png'
+data_path='./res/corn642.png'
+
 image=cv2.imread(data_path)
 image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)# 192 256 3
 
 # #大的可以
-image=Image.fromarray(image)
-image=transforms(image)#3 h w
-image=image.unsqueeze(0)
-input=image.numpy()
+# image=Image.fromarray(image)
+# image=transforms(image)#3 h w
+# image=image.unsqueeze(0)
+# input=image.numpy()
 
 #原文方法
-# input = image.astype(np.float32)
-# input = torch.tensor(input)
-# input = input.unsqueeze(1)
-# # print(input.shape)
-# input = input.permute(1, 3, 0, 2)
-# image = input.to(device)
-# input=input.numpy()
+input = image.astype(np.float32)
+input = torch.tensor(input)
+input = input.unsqueeze(1)
+# print(input.shape)
+input = input.permute(1, 3, 0, 2)
+image = input.to(device)
+input=input.numpy()
 
 b,_,h,w=image.shape
 input_1=torch.linspace(1,h//16,h//16).unsqueeze(1)
@@ -56,8 +57,8 @@ input2=input_2.numpy()
 # input=torch.Tensor(image)
 # print(type(input))
 ort_session=onnxruntime.InferenceSession('PlaneTR_test.onnx')
-ort_inputs={'input_0':input}
-# ort_inputs={'input_0':input,'input_1':input1,'input_2':input2}
+# ort_inputs={'input_0':input}
+ort_inputs={'input_0':input,'input_1':input1,'input_2':input2}
 outputs=ort_session.run(None,ort_inputs)
 
 path=r'res/check_file_ori.txt'
